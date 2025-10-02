@@ -23,7 +23,7 @@ db.serialize(() => {
     CREATE TABLE IF NOT EXISTS files (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       filename TEXT,
-      originalname TEXT,
+      originalname TEXT UNIQUE,
       size INTEGER,
       upload_time INTEGER
     )
@@ -34,14 +34,28 @@ db.serialize(() => {
 app.post("/upload", upload.single("file"), (req, res) => {
   const { filename, originalname, size } = req.file;
 
-  db.run(
+  db.get(
+  "SELECT EXISTS(SELECT 1 FROM files WHERE originalname = ?) AS found",
+  [filename],
+  (err, row) => {
+    if (row.found) {
+      return res.status(400).send("File name already exists. Please select another name.");
+    } 
+    db.run(
     "INSERT INTO files (filename, originalname, size, upload_time) VALUES (?, ?, ?, ?)",
     [filename, originalname, size, Date.now()],
     function (err) {
-      if (err) return res.status(500).send("DB error");
+      
+      if (err) {
+        if (err.code === "SQLITE_CONSTRAINT") {
+          return res.status(409).send("File name already exists.");
+        }
+        return res.status(500).send("DB error");
+      }
       res.send(`File uploaded: ${originalname}`);
     }
   );
+  });
 });
 
 // List files
