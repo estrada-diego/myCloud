@@ -9,7 +9,7 @@ int main(int argc, char **argv) {
 
     char *args[] = {
         "curl",
-        "http://localhost:5000/files",
+        "http://localhost:5000/files?format=text",
         NULL
     };
 

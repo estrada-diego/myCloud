@@ -20,7 +20,7 @@ int main (int argc, char **argv) {
 
     execvp("curl", args);
 
-    perror("execvp"); // only runs if execvp fails
+    perror("execvp");
     return 1;
 
 }
