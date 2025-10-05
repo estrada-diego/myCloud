@@ -4,6 +4,7 @@ const sqlite3 = require("sqlite3").verbose();
 const fs = require("fs");
 const path = require("path");
 const morgan = require("morgan");
+const cors = require("cors");
 
 const app = express();
 const PORT = 5000;
@@ -15,6 +16,31 @@ if (!fs.existsSync(STORAGE_DIR)) {
   fs.mkdirSync(STORAGE_DIR);
 }
 
+function updateParentSizes(parentId, delta) {
+  if (!parentId) return;
+  db.get("SELECT parentId FROM files WHERE id = ?", [parentId], (err, row) => {
+    db.run("UPDATE files SET size = size + ? WHERE id = ?", [delta, parentId]);
+    if (row && row.parentId) updateParentSizes(row.parentId, delta);
+  });
+}
+async function deleteAllChildren(id, rows, filepath) {
+  for (const row of rows) {
+    if (row.type === "📁") {
+      db.all("SELECT id, parentId, originalname FROM files WHERE parentId = ?", [row.id], (dbErr, childRows) => {
+        if (dbErr) console.error("Failed to delete some files:", fsErr);
+        rows.push(...childRows);
+      });
+    }
+    
+    fs.unlink(row.filepath, (fsErr) => {
+      if (fsErr) console.error("Failed to delete some files:", fsErr);
+      db.run("DELETE FROM files WHERE id = ?", [row.id], (dbErr) => {
+        if (dbErr) return res.status(500).send("DB error");
+      });
+    });
+  }
+}
+
 // Setup multer for file uploads
 const upload = multer({ dest: STORAGE_DIR });
 
@@ -24,12 +50,14 @@ db.serialize(() => {
   db.run(`
     CREATE TABLE IF NOT EXISTS files (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      filename TEXT,
-      originalname TEXT UNIQUE,
+      filename TEXT NOT NULL,
+      originalname TEXT NOT NULL,
       size INTEGER,
       upload_time INTEGER,
       type TEXT CHECK(type IN ('📄','📁')) NOT NULL DEFAULT '📄',
-      parentId INTEGER REFERENCES files(id) ON DELETE CASCADE
+      parentId INTEGER REFERENCES files(id) ON DELETE CASCADE,
+      filepath TEXT,
+      UNIQUE (originalname, parentId)  
     )
   `);
 });
@@ -41,40 +69,61 @@ app.post("/upload", upload.array("files"), (req, res) => {
   }
 
   const paths = req.body.paths;
-  console.log(paths);
+
   req.files.forEach((file, i) => {
     const relativePath = Array.isArray(paths) ? paths[i] : paths;
+    if (!relativePath) return;
+
     const parts = relativePath.split("/");
     let parentId = null;
 
-    // We’ll walk parts one by one
-    function insertPart(j) {
+    for (let j = 0; j < parts.length; j++) {
+    
       const name = parts[j];
       const isFile = (j === parts.length - 1);
 
       if (isFile) {
+        // Insert file entry
         db.run(
-          `INSERT INTO files (filename, originalname, size, upload_time, type, parentId)
-           VALUES (?, ?, ?, ?, ?, ?)`,
-          [file.filename, name, file.size, Date.now(), "📄", parentId],
-          (err) => { if (err) console.error("Insert file error:", err); }
+          `INSERT INTO files (filename, originalname, size, upload_time, type, parentId, filepath)
+           VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          [file.filename, name, file.size, Date.now(), "📄", parentId, relativePath],
+          (err) => {
+            if (err) {
+              console.error("Insert file error:", err.message);
+            } else {
+              updateParentSizes(parentId, file.size);
+            }
+          }
         );
       } else {
+        // Insert or find folder entry
+        const currentPath = parts.slice(0, j + 1).join("/");
+
         db.get(
           `SELECT id FROM files WHERE originalname = ? AND parentId IS ? AND type = '📁'`,
           [name, parentId],
           (err, row) => {
+            if (err) {
+              console.error("DB error while checking folder:", err.message);
+              return;
+            }
+
             if (row) {
+              // Folder already exists, update parentId for next level
               parentId = row.id;
-              insertPart(j + 1);
             } else {
+              // Create the folder
               db.run(
-                `INSERT INTO files (filename, originalname, size, upload_time, type, parentId)
-                 VALUES (?, ?, ?, ?, ?, ?)`,
-                [name, name, 0, Date.now(), "📁", parentId],
+                `INSERT INTO files (filename, originalname, size, upload_time, type, parentId, filepath)
+                 VALUES (?, ?, ?, ?, ?, ?, ?)`,
+                [name, name, 0, Date.now(), "📁", parentId, currentPath],
                 function (err2) {
-                  if (!err2) parentId = this.lastID;
-                  insertPart(j + 1);
+                  if (err2) {
+                    console.error("Failed to insert folder:", err2.message);
+                  } else {
+                    parentId = this.lastID;
+                  }
                 }
               );
             }
@@ -82,12 +131,11 @@ app.post("/upload", upload.array("files"), (req, res) => {
         );
       }
     }
-
-    insertPart(0); // start recursion
   });
 
   res.send("Upload successful");
 });
+
 
 
 // Create a directory
@@ -144,7 +192,7 @@ app.get("/files", (req, res) => {
             files: rows
           });
         });
-        
+
       } else if (fmt === "csv") {
         const out = ["id,originalname,size,upload_time,type"]
           .concat(rows.map(r =>
@@ -173,30 +221,45 @@ app.get("/download/:id", (req, res) => {
 // Delete file
 app.delete("/delete/:id", (req, res) => {
 
-  db.get("SELECT * FROM files WHERE id = ?", [req.params.id], (err, row) => {
+  db.get("SELECT id, parentId, originalname, filepath FROM files WHERE id = ?", [req.params.id], (err, row) => {
     if (err || !row) return res.status(404).send("Not found");
 
     const storagePath = path.resolve(STORAGE_DIR);
-    const filepath = path.resolve(STORAGE_DIR, row.filename);    
+    const filepath = row.filepath; 
+    const absolutePath = path.resolve(STORAGE_DIR, filepath);
 
-    if (!filepath.startsWith(storagePath + path.sep) && filepath !== storagePath) {
+
+    if (!absolutePath.startsWith(storagePath + path.sep) && filepath !== storagePath) {
       return res.status(400).send("Invalid file path");
     }
 
+
     fs.unlink(filepath, (fsErr) => {
       if (fsErr) console.error("Failed to delete file:", fsErr);
-
-      db.run("DELETE FROM files WHERE id = ?", [req.params.id], function (dbErr) {
-        if (dbErr) return res.status(500).send("DB error");
-        res.send(`File deleted: ${row.originalname}\n`);
-      });
+      
+      if (row.type === "📁") {
+        db.all("SELECT id, parentId FROM files WHERE parentId = ?", [row.id], (dbErr, rows) => {
+          if (dbErr) return res.status(500).send("DB error");
+          deleteAllChildren(row.id, rows, filepath);
+        });
+      } else {
+        db.run("DELETE FROM files WHERE id = ?", [req.params.id], (dbErr) => {
+          if (dbErr) return res.status(500).send("DB error");
+        });
+      }
+      res.send(`File deleted: ${row.originalname}\n`);
     });
   });
 });
 
-app.use(express.static(path.join(__dirname, "public")));
 app.use(morgan("dev"));
+app.use(express.static(path.join(__dirname, "public")));
+app.use(cors());
 
+
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
+});
 app.listen(PORT, "localhost", () => {
   console.log(`Server running at http://localhost:${PORT}`);
 });
