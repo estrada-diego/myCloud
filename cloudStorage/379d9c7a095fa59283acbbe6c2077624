@@ -1,0 +1,96 @@
+const btn     = document.getElementById('menuBtn');
+const drawer  = document.getElementById('navBar');
+const overlay = document.getElementById('overlay');
+const links = document.getElementById('navBar').children;
+
+function setOpen(open){
+  drawer.classList.toggle('open', open);
+  overlay.classList.toggle('show', open);
+  document.body.classList.toggle('no-scroll', open);
+  btn.setAttribute('aria-expanded', String(open));
+  drawer.setAttribute('aria-hidden', String(!open));
+  if (open) drawer.querySelector('a')?.focus();
+}
+function updateHeader() {
+  const header = document.getElementById("top-header");
+  const logo   = document.getElementById("logo-id");
+  const menuBtn= document.getElementById("menuBtn");
+
+  const scrolled = window.scrollY > 50;
+  header.style.background = scrolled ? "#1f1f1f" : "transparent";
+  logo.style.fontSize     = scrolled ? "1.1rem"   : "1rem";
+  menuBtn.style.fontSize  = scrolled ? "1.8rem"   : "1.5rem";
+}
+function displayMessageSent() {
+  const resultMsgBox = document.getElementById("resultBox");
+  const isDisplayed = resultMsgBox.style.display == "none";
+  if (isDisplayed) {
+    resultMsgBox.style.display = "block";
+  } else {
+    resultMsgBox.style.display = "none";
+  }
+
+}
+/**
+ * Events listeners for drawer.
+ */
+btn.addEventListener('click', () => setOpen(!drawer.classList.contains('open')));
+overlay.addEventListener('click', () => setOpen(false));
+
+window.addEventListener('keydown', (e) => { if (e.key === 'Escape') setOpen(false); });
+const menuButtons = document.querySelectorAll("#navBar a");
+menuButtons.forEach(item => {
+  item.addEventListener('click', () => {
+    item.classList.add("flash");
+    setTimeout(() => {
+      item.classList.remove("flash");
+    }, 500);
+  });
+});
+for (const link of links) {
+  link.addEventListener('click', () => setOpen(false));
+}
+
+/**
+ * Event listeners for header behavior.
+ */
+window.addEventListener('scroll', updateHeader);
+document.addEventListener("DOMContentLoaded", updateHeader);
+
+document.querySelectorAll('.input-box').forEach(box => {
+  box.addEventListener('click', () => {
+    box.querySelector('input').focus();
+  });
+});
+
+const sendButton = document.querySelector('.button-wrapper');
+sendButton.addEventListener('mouseover', () => {
+  sendButton.style.opacity = 0.5;
+});
+sendButton.addEventListener('mouseout', () => {
+  sendButton.style.opacity = 1.0;
+});
+sendButton.addEventListener('click', () => {
+  sendButton.querySelector('button').click();
+});
+
+document.getElementById("contactForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const form = e.target;
+  const formData = new FormData(form);
+
+  const res = await fetch(form.action, {
+    method: "POST",
+    body: formData,
+  });
+  console.log(res);
+
+  if (res.ok) {
+    document.getElementById("resultBox").style.display = "block";
+    form.reset();
+    setTimeout()
+  } else {
+    alert("Something went wrong.");
+  }
+
+});

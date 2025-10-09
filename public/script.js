@@ -1,16 +1,28 @@
 const API_BASE = "";
 let currentDir = null;
+let path = ["all files"]
+const pathBar = document.getElementById("pathBar");
 
-async function loadFiles(parentId = null) {
+function formatBytes(bytes) {
+  if (bytes === 0) return "0 B";
+  const k = 1024;
+  const sizes = ["B", "KB", "MB", "GB", "TB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  const value = bytes / Math.pow(k, i);
+  return `${value.toFixed(value < 10 && i > 0 ? 1 : 0)} ${sizes[i]}`;
+}
+
+async function loadFiles(parentId = null, poppedState = false, reload = false) {
   currentDir = parentId;
   const res = await fetch(`${API_BASE}/files?format=json&parentId=${parentId || ""}`);
   const responseJson = await res.json();
   const files = responseJson.files;
   const parentName = responseJson.parentName;
 
-  if (parentId) {
-    const pathBar = document.getElementById("pathBar").innerText += "/" + parentName;
-  }
+  if (!poppedState && parentId && !reload) path.push(parentName);
+  if (poppedState) path.pop();
+  pathBar.innerText = "/" + path.join("/");
+
 
   const tbody = document.getElementById("fileTableBody");
   tbody.innerHTML = "";
@@ -28,10 +40,10 @@ async function loadFiles(parentId = null) {
     tr.innerHTML = `
       <td>${nameCell}</td>
       <td>${file.type}</td>
-      <td>${file.size} bytes</td>
+      <td>${formatBytes(file.size)} bytes</td>
       <td>${date.toLocaleString()}</td>
       <td>
-        ${file.type === "📄" ? `<button onclick="downloadFile(${file.id}, '${file.originalname}')">Download</button>` : ""}
+        <button onclick="downloadFile(${file.id}, '${file.originalname}')">Download</button>
         <button onclick="deleteFile(${file.id})">Delete</button>
       </td>
     `;
@@ -42,34 +54,9 @@ async function loadFiles(parentId = null) {
 
 async function openFolder(parentId = null) {
   history.pushState({ parentId }, "", `?parentId=${parentId}`);
-  await loadFiles(parentId);
+  await loadFiles(parentId, false, false);
   currentDir = parentId;
 }
-
-// Fetch files and populate table
-// async function loadFiles() {
-//   const res = await fetch(`${API_BASE}/files?format=json`);
-//   const files = await res.json();
-//   const tbody = document.getElementById("fileTableBody");
-//   tbody.innerHTML = "";
-
-//   files.forEach(file => {
-//     const tr = document.createElement("tr");
-
-//     tr.innerHTML = `
-//       <td>${file.id}</td>
-//       <td>${file.type}</td>
-//       <td>${file.originalname}</td>
-//       <td>${file.size} bytes</td>
-//       <td>
-//         <button class="action-btn download" onclick="downloadFile(${file.id}, '${file.originalname}')">Download</button>
-//         <button class="action-btn delete" onclick="deleteFile(${file.id})">Delete</button>
-//       </td>
-//     `;
-
-//     tbody.appendChild(tr);
-//   });
-// }
 
 document.getElementById("uploadType").addEventListener("change", (e) => {
   const value = e.target.value;
@@ -102,12 +89,12 @@ document.getElementById("uploadForm").addEventListener("submit", async (e) => {
   }
   const res = await fetch("/upload", { method: "POST", body: formData });
   alert(await res.text());
-  loadFiles();
+  loadFiles(null, false, true);
 });
 
 window.addEventListener("popstate", (event) => {
   const parentId = event.state ? event.state.parentId : null;
-  loadFiles(parentId);
+  loadFiles(parentId, true);
 });
 
 // Download file
@@ -122,8 +109,8 @@ function downloadFile(id, name) {
 async function deleteFile(id) {
   if (!confirm("Delete this file?")) return;
   await fetch(`${API_BASE}/delete/${id}`, { method: "DELETE" });
-  loadFiles();
+  loadFiles(currentDir, false, true);
 }
 
 // Initial load
-loadFiles();
+loadFiles(null, false, true);

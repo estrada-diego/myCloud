@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Diego's Portfolio</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://kit.fontawesome.com/0d4ede9e24.js" crossorigin="anonymous" defer></script>
+
+</head>
+
+<body>
+    <div class="main-header" id="top-header">
+        <div class="logo" id="logo-id">Diego's Portfolio</div>
+        <button class="menu-btn" id="menuBtn" aria-controls="navBar" aria-expanded="false" aria-label="Open menu">☰</button>
+        <nav class="desktop-nav-bar" id="dnb" aria-hidden="true">
+            <ul class="menu-buttons-desktop">
+                <li><a href="#home">Home</a></li>
+                <li><a href="#about">About</a></li>
+                <li><a href="#experience">Experience</a></li>
+                <li><a href="#contact-me">Contact</a></li>
+            </ul>
+        </nav>
+    </div>
+    <div class="overlay" id="overlay"></div>
+    <nav class="nav-bar" id="navBar" aria-hidden="true">
+            <ul class="menu-buttons">
+                <li><a href="#home">home</a></li>
+                <li><a href="#about">About</a></li>
+                <li><a href="#experience">Experience</a></li>
+                <li><a href="#contact-me">Contact</a></li>
+            </ul>
+        </nav>
+    <div id="home">
+        <div class="profile-wrapper">
+        <div id="circle-portrait">
+            <img id="portrait_jpg" src="images/portrait.jpg" alt="headshot of me">
+        </div>
+            
+        <h1 class="name-under-photo">
+            Diego Estrada
+        </h1>
+        </div>
+    </div>
+    <div id="company-logos">
+        <div class="logos" id="UT_logo"><img src="images/UT_Austin_logo.png" alt="UT Austin Logo"></div>
+        <div id="Dell-wrapper"><img src="images/Dell Technologies Horizontal.svg" alt="Dell Technologies Logo"></div>
+        <div class="logos" id="fri"><img src="images/TexasFRI.jpg" alt="FRI UT Austin"></div>
+    </div>
+    <div id="about">
+        <div class="container">
+            <div class="row">
+                <div class="about-profile">
+                    <div id="about-profile-container"><img src="images/IMG_3609.jpg"></div>
+                    <div class="social-media">
+                        <button id="github" onclick="window.open('https://github.com/estrada-diego', '_blank', 'noopener,noreferrer')">
+                            <img src="images/githubButton.png" alt="Github"></button>
+                        <button id="linkedin" onclick="window.open('https://www.linkedin.com/in/diegoestrada2500/', '_blank', 'noopener,noreferrer')"><img src="images/linkedinButton.png" alt="Linkedin"></button>
+                    </div>
+                </div>
+                <div class="about-text">
+                    <h4>Diego Estrada</h4>
+                    <div id="roles"><b>UT Austin '28, Software Engineer, and Autonomous Robotics Researcher</b></div>
+                    <div id="about-paragraph">I'm an undergraduate student at The University of Texas at Austin for Computer Science. 
+                        My interests range from software engineering to machine learning, artificial intelligence, computer 
+                        vision, robotics, and systems engineering.<br><br>
+                    
+                        I'm currently pursuing a B.S. in Computer Science with a minor in Statistics and Data Science.</div>
+                </div>
+            </div>
+        </div>
+        </div>
+    <div id="skills-div">
+        <div class="skills-wrapper">
+            <div id="skills-title"><h1>Skills</h1></div>
+            <div class="skills-grid">
+                <div class="skill-container">
+                    <div class="circle"><i class="fa-solid fa-eye"></i></div>
+                    <h2>Computer Vision</h2>
+                    <p>Experienced in computer vision through my research in robotics, where I <span class="highlight">used OpenCV and 
+                        yolo-world to detect a person and compute their coordinates</span>.
+                    </p>
+                </div>
+                <div class="skill-container">
+                    <div class="circle"><i class="fa-solid fa-code"></i></div>
+                    <h2>HTML/CSS and JavaScript</h2>
+                    <p>Extensively experienced in Web Dev with HTML/CSS and JS. Previously I designed and coded
+                        a <span class="highlight">website to recruit students</span> from El Salvador for online programming classes that  
+                        I was hosting. 
+                    </p>
+                </div>
+                <div class="skill-container">
+                    <div class="circle"><i class="fa-brands fa-python"></i></div>
+                    <h2>Python</h2>
+                    <p>I have significant experience in python ranging from using it at the UTCS Machine 
+                        Learning Academies to create a <span class="highlight">multi-class perceptron that identifies hand-written 
+                        numbers</span> to using it to deploy an image-classifier with pyTorch. I also used python for my
+                        internship at <span class="dellHighlight">Dell</span>, where I also used chainlang to process requests to various LLM APIs.
+                    </p>
+                </div>
+                <div class="skill-container">
+                    <div class="circle"><i id="cplpl" class="fa-solid fa-c"><span id="plus">++</span></i></div>
+                    <h2>C/C++</h2>
+                    <p>I have extensive experience using C and C++ through my autonomous robotics research. I used
+                        C++ for developing the CV model used for a <span class="highlight">person identifier</span> through OpenCV.
+                    </p>
+                </div>
+                <div class="skill-container">
+                    <div class="circle"><i class="fa-solid fa-robot"></i></div>
+                    <h2>ROS</h2>
+                    <p>Used ROS extensively for my research in autonomous robotics. Created a <span class="highlight">ROS program that published
+                        and subscribed to ROS topics</span> in order to let the program know when a person had been identified
+                        by the CV model.
+                    </p>
+                </div>
+                <div class="skill-container">
+                    <div class="circle"><i class="fa-solid fa-gear"></i></div>
+                    <h2>Systems</h2>
+                    <p>Created a <span class="highlight">system emulator and a memory manager</span> for my Computer Architecture class.
+                        The system emulator included components such as a cache simulator and a simulated CPU.
+                    </p>
+                </div>
+               
+            </div>
+        </div>
+
+    
+    
+    </div>
+    <div class="experience-div" id="experience">
+        <h1>Professional Experience</h1>
+        <div class="experience-container">
+            <div class="Dell-experience">
+                <img src="images/IgniteTeam.jpeg" alt="Dell Internship Team Picture">
+                <div class="dell-text-wrapper">
+                    <h2>Software Engineer intern - Dell Technologies</h2>
+                    <p>Worked with a team of electrical, mechanical, and software engineers in developing an
+                        AI product. Won against the two other teams by unanimous vote taken by a board of
+                        Dell executives. Used tools such as git, Arduino C, python, LangChain, among others.
+                        <br><br>Used MS Office tools to create a presentation and document software design decisions.</p>
+                </div>
+            </div>
+            <div class="UTCS-Academies">
+                <img src="images/ML.jpg" alt="UTCS Academies picture">
+                <div class="UTCS-Academies-wrapper">
+                    <h2>Program Assistant - UT Austin Computer Science </h2>
+                    <p>Helped students in the Machine Learning Academy to code a multi-class-calcification
+                        perceptron and a Q-learning agent (a reinforcement learning algorithm) using python.
+                    
+                        <br><br>
+                        Helped students in the iOS development Academy to code their own app. Used XCode and swift.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="contact" id="contact-me">
+        <h2>Contact me</h2>
+        <h4>Email: <span class="email-break"><br></span>diego.estrada@utexas.edu diegofestradar@gmail.com</h4>
+        <form class="form-item" id="contactForm" action="https://dfeserve.duckdns.org/contact" method="POST">
+            <div class="contact-box">
+                <div class="left">
+                    <div class="input-box">
+                        <input type="text" name="name" placeholder="Your Name *">
+                    </div>
+                    <div class="input-box">
+                        <input type="email" name="email" placeholder="Your Email *">
+                    </div>
+                    <div class="input-box">
+                        <input type="text" name="phone" placeholder="Your Phone">
+                    </div>
+                </div>
+                <div class="right">
+                    <div class="input-box">
+                        <input type="text" name="message" placeholder="Your Message *">
+                    </div>
+                </div>
+            </div>
+            <div class="button-wrapper">
+                <button type="submit">Send</button>
+            </div>
+        </form>
+    </div>
+    <div id="footer">
+        <h4>Copyright © Diego Estrada 2025</h4>
+    </div>
+    <div id="resultBox"></div>    
+    </div>
+
+
+
+
+    <script src="script.js " defer></script>
+
+</body>
+
+</html>
