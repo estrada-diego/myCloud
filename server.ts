@@ -1,19 +1,21 @@
-import express from "express";
+import express, { Request, Response } from "express";
 import multer from "multer";
 import sqlite3 from "sqlite3";
 import fs from "fs";
 import path from "path";
 import morgan from "morgan";
 import cors from "cors";
-import type { Request } from "express";
+import archiver from "archiver";
 
 const app = express();
 const PORT = 5000;
-app.use(express.json());
 const STORAGE_DIR = './cloudStorage'
 const DB_FILE = path.join(__dirname, "files.db");
 const MAX_STORAGE_BYTES = 1 * 1024 * 1024 * 1024 * 1024
 let usedStorage = 0;
+
+app.use(cors());
+app.use(express.json());
 
 /**
  * Represents a file record in the db.
@@ -221,6 +223,52 @@ app.post("/upload", upload.array("files"), async (req: Request, res) => {
   res.send("Upload successful");
 });
 
+// Uploads a zip
+app.post("/download-multiple", express.json(), async (req: Request, res: Response) => {
+  const { ids } = req.body as { ids: string[] };
+
+  if (!Array.isArray(ids) || ids.length === 0) {
+    return res.status(400).json({ error: "No file IDs provided." });
+  }
+
+  try {
+    const archive = archiver("zip", { zlib: { level: 9 } });
+
+    res.attachment("files.zip");
+    archive.pipe(res);
+
+    // Fetch all file paths in parallel
+    const fileRows = await Promise.all(
+      ids.map(
+        (id) =>
+          new Promise<{ originalname: string; filepath: string } | null>((resolve) => {
+            db.get(
+              "SELECT originalname, filepath FROM files WHERE id = ?",
+              [id],
+              (err, row) => {
+                if (err || !row) resolve(null);
+                else resolve(row as { originalname: string; filepath: string });
+              }
+            );
+          })
+      )
+    );
+
+    for (const row of fileRows) {
+      if (row && fs.existsSync(row.filepath)) {
+        archive.file(row.filepath, { name: row.originalname });
+      }
+    }
+
+    await archive.finalize();
+  } catch (err) {
+    console.error("Error creating zip:", err);
+    if (!res.headersSent) {
+      res.status(500).json({ error: "Failed to create zip archive" });
+    }
+  }
+});
+
 
 
 // Create a directory
@@ -264,24 +312,29 @@ app.get("/files", (req, res) => {
     (err, rows) => {
       if (err) return res.status(500).send("DB error");
 
-      const fmt = req.query.format || "json";
-      
-      if (fmt === "json") {
-        if (!parentId) {
-          return res.json({ parentName: null, files: rows });
-        }
-        db.get<FileRecord>("SELECT originalname FROM files WHERE id = ?", [parentId], (err2, parent) => {
-          if (err2) return res.status(500).send("DB error");
-          res.json({
-            parentName: parent ? parent.originalname : null,
-            files: rows
-          });
-        });
-
+      function getPathRecursive(id: number | null, cb: (path: string[]) => void) {
+        if (!id) return cb([]);
+        db.get<FileRecord>(
+          "SELECT originalname, parentId FROM files WHERE id = ?",
+          [id],
+          (err2, row) => {
+            if (err2 || !row) return cb([]);
+            getPathRecursive(row.parentId, (prev) => cb([...prev, row.originalname]));
+          }
+        );
       }
+
+      getPathRecursive(parentId ? Number(parentId) : null, (pathArr) => {
+        res.json({
+          parentName: pathArr[pathArr.length - 1] || null,
+          path: pathArr,
+          files: rows,
+        });
+      });
     }
   );
 });
+
 
 // Download file
 app.get("/download/:id", (req, res) => {
@@ -331,9 +384,9 @@ app.get("/storage-usage", (req, res) => {
   });
 });
 
+
 app.use(morgan("dev"));
 app.use(express.static(path.join(__dirname, "public")));
-app.use(cors());
 
 
 app.get("/", (req, res) => {
