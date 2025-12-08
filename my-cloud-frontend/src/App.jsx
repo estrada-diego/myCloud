@@ -6,6 +6,7 @@ import Breadcrumb from "./components/Breadcrumb"
 import Actions from "./components/Actions"
 import FileList from "./components/FileList"
 import { useFiles } from "./contexts/FileContext";
+import Header from "./components/Header";
 
 const API_BASE = "http://localhost:5000";
 
@@ -29,8 +30,10 @@ export default function App() {
 
 
   return (
+    <><Header></Header>
     <div className="container flex-grow-1 light-style container-p-y">
       <div className="container-m-nx container-m-ny bg-lightest mb-3">
+      
       <Breadcrumb
         path={path}
         onClickRoot={() => {
@@ -47,6 +50,7 @@ export default function App() {
       </div>
       <FileList files={files} onOpen={(id) => loadFiles(id)} viewMode={viewMode}/>
     </div>
+    </>
   );
 }
 

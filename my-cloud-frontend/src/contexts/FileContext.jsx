@@ -23,8 +23,15 @@ export function FileProvider({ children }) {
     if (parentId === null) {
       setPath([{ name: "home", id: null }]);
     } else {
-      setPath(prev => [...prev, { name: parentName, id: parentId }]);
-    }
+    setPath(prev => {
+      const existingIndex = prev.findIndex(p => p.id === parentId);
+      if (existingIndex !== -1) {
+        return prev.slice(0, existingIndex + 1);
+      } else {
+        return [...prev, { name: parentName, id: parentId }];
+      }
+    });
+  }
 
     const url = parentId ? `?dir=${parentId}` : "/";
     if (replace) {

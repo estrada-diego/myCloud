@@ -10,7 +10,7 @@ import React, { useState } from "react";
 
 const API_BASE = "http://localhost:5000";
 
-export default function Actions(loadFiles = { loadFiles }, currentDir = { currentDir }) {
+export default function Actions({loadFiles, currentDir, viewMode, setViewMode}) {
   const theme = useTheme();
   const { selectedFiles } = useFiles();
   const [openDownload, setOpenDownload] = useState(false);
@@ -53,8 +53,10 @@ export default function Actions(loadFiles = { loadFiles }, currentDir = { curren
       setOpenDownload(false);
     }
   };
-  
-  
+
+  const handleViewChange = (event, newView) => {
+    if (newView !== null) setViewMode(newView);
+  };
   
 
   return (
@@ -96,11 +98,11 @@ export default function Actions(loadFiles = { loadFiles }, currentDir = { curren
           </div>
         </div>
 
-        <ToggleButtonGroup size="small" exclusive>
-          <ToggleButton value="module">
+        <ToggleButtonGroup size="small" exclusive onChange={handleViewChange} value={viewMode}>
+          <ToggleButton value="list">
             <ViewListIcon />
           </ToggleButton>
-          <ToggleButton value="list">
+          <ToggleButton value="module">
             <ViewModuleIcon />
           </ToggleButton>
         </ToggleButtonGroup>

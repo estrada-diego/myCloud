@@ -6,6 +6,8 @@ import path from "path";
 import morgan from "morgan";
 import cors from "cors";
 import archiver from "archiver";
+import mime from "mime-types";
+
 
 const app = express();
 const PORT = 5000;
@@ -268,7 +270,26 @@ app.post("/download-multiple", express.json(), async (req: Request, res: Respons
     }
   }
 });
+// View file inline
+app.get("/view/:id", (req, res) => {
+  db.get<FileRecord>("SELECT * FROM files WHERE id = ?", [req.params.id], (err, row) => {
+    if (err || !row) return res.status(404).send("Not found");
 
+    const filepath = path.join(STORAGE_DIR, row.filename);
+
+    if (!fs.existsSync(filepath)) {
+      return res.status(404).send("File missing on disk");
+    }
+
+    const mimeType = mime.lookup(row.originalname) || "application/octet-stream";
+
+    res.setHeader("Content-Type", mimeType);
+    res.setHeader("Content-Disposition", "inline");
+
+    const stream = fs.createReadStream(filepath);
+    stream.pipe(res);
+  });
+});
 
 
 // Create a directory
@@ -386,7 +407,7 @@ app.get("/storage-usage", (req, res) => {
 
 
 app.use(morgan("dev"));
-app.use(express.static(path.join(__dirname, "public")));
+app.use(express.static(path.join(__dirname, "my-cloud-frontend", "public")));
 
 
 app.get("/", (req, res) => {
