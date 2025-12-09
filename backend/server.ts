@@ -10,9 +10,9 @@ import mime from "mime-types";
 
 
 const app = express();
-const PORT = 5000;
-const STORAGE_DIR = './cloudStorage'
-const DB_FILE = path.join(__dirname, "files.db");
+const PORT = 5050;
+const STORAGE_DIR = process.env.STORAGE_DIR || path.join(__dirname, "../cloudStorage");
+const DB_FILE = process.env.DB_FILE || path.join(__dirname, "../data.db");
 const MAX_STORAGE_BYTES = 1 * 1024 * 1024 * 1024 * 1024
 let usedStorage = 0;
 
@@ -171,7 +171,7 @@ async function ensurePath(parts: string[], file: Express.Multer.File) {
 const upload = multer({ dest: STORAGE_DIR });
 
 // Init SQLite DB
-const db = new sqlite3.Database("files.db");
+const db = new sqlite3.Database(DB_FILE);
 db.serialize(() => {
   db.run(`
     CREATE TABLE IF NOT EXISTS files (
@@ -407,13 +407,8 @@ app.get("/storage-usage", (req, res) => {
 
 
 app.use(morgan("dev"));
-app.use(express.static(path.join(__dirname, "my-cloud-frontend", "public")));
 
-
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
-});
-app.listen(PORT, "localhost", () => {
+app.listen(PORT, "0.0.0.0", () => {
   console.log(`Server running at http://localhost:${PORT}`);
 });
 

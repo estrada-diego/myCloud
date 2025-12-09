@@ -9,7 +9,7 @@ import {
 } from "@mui/material";
 import { useFiles } from "../../contexts/FileContext";
 
-const API_BASE = "http://localhost:5000";
+const API_BASE = "http://localhost:5050";
 
 export default function DownloadDialog({ open, onClose, onConfirm }) {
   const { selectedFiles } = useFiles();

@@ -1,0 +1,10 @@
+localhost {
+
+    @api path /files* /upload* /delete* /download* /mkdir* /rename*
+    reverse_proxy @api backend:5050
+
+    # Everything else → frontend
+    reverse_proxy frontend:80
+
+    encode gzip
+}

@@ -1,0 +1,14 @@
+:80 {
+    basicauth {
+        admin JDJhJDEwJH.... # hashed password
+    }
+
+    handle_path /api/* {
+        reverse_proxy backend:5050
+    }
+
+    handle {
+        root * /usr/share/nginx/html
+        file_server
+    }
+}
