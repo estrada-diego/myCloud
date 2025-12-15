@@ -8,7 +8,7 @@ import { useFiles } from "../contexts/FileContext";
 import DownloadDialog from "./dialogs/DownloadDialog";
 import React, { useState } from "react";
 
-const API_BASE = "http://localhost:5050";
+const API_BASE = "/api";
 
 export default function Actions({loadFiles, currentDir, viewMode, setViewMode}) {
   const theme = useTheme();

@@ -2,7 +2,7 @@
 import { createContext, useContext, useState } from "react";
 
 const FileContext = createContext();
-const API_BASE = "http://localhost:5050";
+const API_BASE = "/api";
 
 export function FileProvider({ children }) {
   const [files, setFiles] = useState([]);

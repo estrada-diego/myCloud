@@ -32,7 +32,7 @@ export default function UploadMenu() {
         }
       
         try {
-            const res = await fetch("http://localhost:5050/upload", {
+            const res = await fetch("/api/upload", {
                 method: "POST",
                 body: formData,
             });

@@ -8,9 +8,10 @@
     "skipLibCheck": true,
     "strict": true,
     "outDir": "dist",
+    "rootDir": "src",
     "sourceMap": true,
     "lib": ["esnext"],
     "types": ["node"]
   },
-  "include": ["server.ts"]
+  "include": ["src/server.ts"]
 }

@@ -8,7 +8,7 @@ import FileList from "./components/FileList"
 import { useFiles } from "./contexts/FileContext";
 import Header from "./components/Header";
 
-const API_BASE = "http://localhost:5050";
+const API_BASE = "/api";
 
 
 

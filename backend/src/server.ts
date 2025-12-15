@@ -1,4 +1,4 @@
-import express, { Request, Response } from "express";
+import express, { Request, Response, Express } from "express";
 import multer from "multer";
 import sqlite3 from "sqlite3";
 import fs from "fs";
@@ -10,14 +10,17 @@ import mime from "mime-types";
 
 
 const app = express();
-const PORT = 5050;
-const STORAGE_DIR = process.env.STORAGE_DIR || path.join(__dirname, "../cloudStorage");
-const DB_FILE = process.env.DB_FILE || path.join(__dirname, "../data.db");
+const api = express.Router();
+
+const PORT = Number(process.env.PORT) || 5050;
+const STORAGE_DIR = process.env.STORAGE_DIR || path.join(__dirname, "../disk/storage");
+const DB_FILE = process.env.DB_FILE || path.join(__dirname, "../disk/data.db");
 const MAX_STORAGE_BYTES = 1 * 1024 * 1024 * 1024 * 1024
 let usedStorage = 0;
 
 app.use(cors());
 app.use(express.json());
+
 
 /**
  * Represents a file record in the db.
@@ -32,7 +35,7 @@ interface FileRecord {
 }
 
 if (!fs.existsSync(STORAGE_DIR)) {
-  fs.mkdirSync(STORAGE_DIR);
+  fs.mkdirSync(STORAGE_DIR, { recursive: true });
 }
 
 // Begin helper functions
@@ -195,11 +198,17 @@ db.get<{ total: number }>(
 );
 
 // Upload endpoint
-app.post("/upload", upload.array("files"), async (req: Request, res) => {
-  const files = req.files as Express.Multer.File[];
+api.post("/upload", upload.array("files"), async (req, res) => {
+  const files = req.files as Express.Multer.File[] | undefined;
+
+  if (!files || files.length === 0) {
+    return res.status(400).send("No files uploaded");
+  }
+
   const paths = req.body.paths as string | string[];
 
   const incomingTotal = files.reduce((sum, f) => sum + f.size, 0);
+
 
   if (usedStorage + incomingTotal > MAX_STORAGE_BYTES) {
     const remaining = MAX_STORAGE_BYTES - usedStorage;
@@ -226,7 +235,7 @@ app.post("/upload", upload.array("files"), async (req: Request, res) => {
 });
 
 // Uploads a zip
-app.post("/download-multiple", express.json(), async (req: Request, res: Response) => {
+api.post("/download-multiple", express.json(), async (req: Request, res: Response) => {
   const { ids } = req.body as { ids: string[] };
 
   if (!Array.isArray(ids) || ids.length === 0) {
@@ -271,7 +280,7 @@ app.post("/download-multiple", express.json(), async (req: Request, res: Respons
   }
 });
 // View file inline
-app.get("/view/:id", (req, res) => {
+api.get("/view/:id", (req, res) => {
   db.get<FileRecord>("SELECT * FROM files WHERE id = ?", [req.params.id], (err, row) => {
     if (err || !row) return res.status(404).send("Not found");
 
@@ -293,7 +302,7 @@ app.get("/view/:id", (req, res) => {
 
 
 // Create a directory
-app.post("/mkdir", (req, res) => {
+api.post("/mkdir", (req, res) => {
   const { dirname } = req.body;
   if (!dirname) return res.status(400).send("Missing dirname");
 
@@ -324,7 +333,7 @@ app.post("/mkdir", (req, res) => {
 });
 
 // List files
-app.get("/files", (req, res) => {
+api.get("/files", (req, res) => {
   const parentId = req.query.parentId || null;
 
   db.all<FileRecord>(
@@ -358,7 +367,7 @@ app.get("/files", (req, res) => {
 
 
 // Download file
-app.get("/download/:id", (req, res) => {
+api.get("/download/:id", (req, res) => {
   db.get<FileRecord>("SELECT * FROM files WHERE id = ?", [req.params.id], (err, row) => {
     if (err || !row) return res.status(404).send("Not found");
     const filepath = path.join(STORAGE_DIR, row.filename);
@@ -367,7 +376,7 @@ app.get("/download/:id", (req, res) => {
 });
 
 // Delete file
-app.delete("/delete/:id", (req, res) => {
+api.delete("/delete/:id", (req, res) => {
 
   db.get<FileRecord>("SELECT id, parentId, type, filename FROM files WHERE id = ?", [req.params.id], (err, row) => {
     if (err || !row) return res.status(404).send("Not found");
@@ -381,6 +390,7 @@ app.delete("/delete/:id", (req, res) => {
       db.all("SELECT id, parentId FROM files WHERE parentId = ?", [row.id], async (dbErr, rows) => {
         if (dbErr) return res.status(500).send("DB error");
         await deleteAllChildren(row.id);
+        res.send(`File deleted: ${row.originalname}\n`);
       });
       usedStorage -= row.size;
       if (usedStorage < 0) usedStorage = 0;
@@ -389,15 +399,15 @@ app.delete("/delete/:id", (req, res) => {
         if (fsErr) console.error("Failed to delete file:", fsErr);
         db.run("DELETE FROM files WHERE id = ?", [req.params.id], (dbErr) => {
           if (dbErr) return res.status(500).send("DB error");
+          res.send(`File deleted: ${row.originalname}\n`);
         });
       });
       
     }
-    res.send(`File deleted: ${row.originalname}\n`);
   });
 });
 
-app.get("/storage-usage", (req, res) => {
+api.get("/storage-usage", (req, res) => {
   res.json({
     used: usedStorage,
     limit: MAX_STORAGE_BYTES,
@@ -407,6 +417,8 @@ app.get("/storage-usage", (req, res) => {
 
 
 app.use(morgan("dev"));
+app.use("/api", api);
+
 
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`Server running at http://localhost:${PORT}`);

@@ -5,7 +5,7 @@ import { faEllipsisV } from "@fortawesome/free-solid-svg-icons";
 import { useFiles } from "../contexts/FileContext"; // or correct path
 
 
-const API_BASE = "http://localhost:5050";
+const API_BASE = "/api";
 
 export function FileOptionsMenu({ onOpen, onDownload, onDelete, file }) {
   const [anchorEl, setAnchorEl] = useState(null);
@@ -31,15 +31,14 @@ export function FileOptionsMenu({ onOpen, onDownload, onDelete, file }) {
   
       if (!res.ok) {
         const text = await res.text();
-        throw new Error(`Download failed: ${text}`);
+        throw new Error(`Delete failed: ${text}`);
       }
 
   
     } catch (err) {
       console.error("Error during download:", err);
     } finally {
-      handleClose(event);
-      loadFiles(currentDir);
+      await loadFiles(currentDir);
     }
     
   }
@@ -89,10 +88,9 @@ export function FileOptionsMenu({ onOpen, onDownload, onDelete, file }) {
           Download
         </MenuItem>
         <MenuItem
-          onClick={(e) => {
-            handleDelete(e);
+          onClick={async (e) => {
+            await handleDelete(e);
             e.stopPropagation();
-            onDelete?.();
             handleClose(e);
           }}
         >
